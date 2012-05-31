@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import json
+import yaml
 import requests
 import re
 from subprocess import Popen, PIPE
@@ -25,7 +26,7 @@ def craft_request():
 	return {'version': '1.1.0', 'host': 'gcl.xolus.net', 'request_address': True, 'wifi_towers': [ { "mac_address": mac, "age": 0 } for mac in get_wifi_data() ]}
 
 def get_position():
-	return requests.session().post(endpoint, json.dumps(craft_request())).text
+	return json.loads(requests.session().post(endpoint, json.dumps(craft_request())).text)
 
 if __name__ == '__main__':
-	print(get_position())
+	print(yaml.dump(get_position()['location']))
