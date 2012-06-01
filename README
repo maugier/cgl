@@ -1,0 +1,8 @@
+
+cgl, the CLI GeoLocator
+
+cgl is a command-line tool to get geolocation information.
+
+It will try to retrieve BSSIDs from nearby wifi access points, by running wpa_cli,
+or fallback to iwconfig to get the current cell BSSID. The BSSIDs are then submitted
+to Google's geolocation service, and the resulting position returned in YAML format.
