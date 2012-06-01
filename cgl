@@ -6,24 +6,41 @@ import requests
 import re
 from subprocess import Popen, PIPE
 
-mac_format = re.compile('^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$')
+mac_format = re.compile('([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}')
+iwc_ap_format = re.compile('Access Point: (([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2})')
 
 endpoint = "http://www.google.com/loc/json"
 
 def get_wifi_data():
+	try:
+		return get_from_wpa_cli()
+	except:
+		return get_from_iwconfig()
 
-	child = Popen(['/usr/bin/wpa_cli', 'scan_results'], stdout=PIPE);
+def get_from_wpa_cli():
+	out = []
+	child = Popen(['/usr/bin/wpa_cli', 'scan_results'], stdout=PIPE)
 	for l in child.stdout:
 			data = l.decode('ascii').split('\t')
 			mac = data[0]
-			if not mac_format.match(mac):
-				continue
-			yield mac.replace(':','-')
-	child.wait()
+			if mac_format.match(mac):
+				out.append(mac)
+			
+	if child.wait():
+		raise Exception('wpa_cli error')
 
+	return out
+
+def get_from_iwconfig():
+	child = Popen(['/sbin/iwconfig'], stdout=PIPE)
+	for l in child.stdout:
+		m = iwc_ap_format.search(l.decode('ascii'))
+		if m:
+			return [m.group(1)]
+			
 
 def craft_request():
-	return {'version': '1.1.0', 'host': 'gcl.xolus.net', 'request_address': True, 'wifi_towers': [ { "mac_address": mac, "age": 0 } for mac in get_wifi_data() ]}
+	return {'version': '1.1.0', 'host': 'gcl.xolus.net', 'request_address': True, 'wifi_towers': [ { "mac_address": mac.replace(':','-'), "age": 0 } for mac in get_wifi_data() ]}
 
 def get_position():
 	return json.loads(requests.session().post(endpoint, json.dumps(craft_request())).text)
